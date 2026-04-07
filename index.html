@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>智者圆桌</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;600;700;900&family=EB+Garamond:ital,wght@0,400;0,600;1,400&family=Inconsolata:wght@300;400&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --bg: #0d0d0f;
+  --surface: #141418;
+  --surface2: #1c1c22;
+  --border: rgba(255,255,255,0.07);
+  --border-b: rgba(255,255,255,0.14);
+  --text: #e8e4dc;
+  --muted: rgba(232,228,220,0.45);
+  --dim: rgba(232,228,220,0.22);
+  --gold: #c9a84c;
+  --gold-bg: rgba(201,168,76,0.1);
+}
+html { scroll-behavior: smooth; }
+body { background: var(--bg); color: var(--text); font-family: 'Noto Serif SC', serif; min-height: 100vh; overflow-x: hidden; }
+body::before {
+  content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");
+}
+
+/* ── Password Gate ── */
+.gate {
+  position: fixed; inset: 0; z-index: 1000;
+  background: var(--bg);
+  display: flex; align-items: center; justify-content: center;
+}
+.gate.hidden { display: none; }
+.gate-box {
+  width: 360px; padding: 48px 40px;
+  border: 1px solid var(--border-b);
+  background: var(--surface);
+  text-align: center;
+  position: relative;
+}
+.gate-box::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+}
+.gate-glyph { font-size: 32px; margin-bottom: 20px; opacity: 0.6; }
+.gate-title { font-size: 20px; font-weight: 700; letter-spacing: 3px; margin-bottom: 6px; }
+.gate-sub {
+  font-family: 'Inconsolata', monospace; font-size: 11px;
+  letter-spacing: 2px; color: var(--muted); margin-bottom: 32px;
+}
+.gate-input {
+  width: 100%; background: var(--surface2); border: 1px solid var(--border-b);
+  color: var(--text); font-family: 'Inconsolata', monospace; font-size: 14px;
+  padding: 12px 16px; outline: none; text-align: center; letter-spacing: 3px;
+  margin-bottom: 12px; transition: border-color 0.2s;
+}
+.gate-input:focus { border-color: var(--gold); }
+.gate-input::placeholder { letter-spacing: 1px; color: var(--dim); }
+.gate-btn {
+  width: 100%; background: var(--gold); border: none; color: #0d0d0f;
+  font-family: 'Noto Serif SC', serif; font-size: 13px; font-weight: 700;
+  padding: 13px; cursor: pointer; letter-spacing: 3px; transition: background 0.2s;
+}
+.gate-btn:hover { background: #e0bc60; }
+.gate-err {
+  font-family: 'Inconsolata', monospace; font-size: 11px;
+  color: #c97a7a; margin-top: 10px; letter-spacing: 1px; min-height: 16px;
+}
+.gate-skip {
+  margin-top: 16px; font-family: 'Inconsolata', monospace;
+  font-size: 10px; color: var(--dim); cursor: pointer; letter-spacing: 1px;
+}
+.gate-skip:hover { color: var(--muted); }
+
+/* ── Header ── */
+header {
+  position: relative; z-index: 10;
+  padding: 36px 40px 28px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 24px; flex-wrap: wrap;
+}
+.brand { display: flex; align-items: center; gap: 14px; }
+.brand-glyph {
+  width: 40px; height: 40px; border: 1px solid var(--gold);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; color: var(--gold); flex-shrink: 0;
+}
+.brand h1 { font-size: 20px; font-weight: 700; letter-spacing: 4px; }
+.brand p { font-family: 'Inconsolata', monospace; font-size: 10px; letter-spacing: 2px; color: var(--muted); margin-top: 3px; }
+
+/* Model selector */
+.model-row { display: flex; align-items: center; gap: 8px; }
+.model-label { font-family: 'Inconsolata', monospace; font-size: 10px; letter-spacing: 2px; color: var(--muted); }
+.model-select {
+  background: var(--surface2); border: 1px solid var(--border-b);
+  color: var(--text); font-family: 'Inconsolata', monospace; font-size: 12px;
+  padding: 7px 12px; outline: none; cursor: pointer; transition: border-color 0.2s;
+  appearance: none; -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='rgba(232,228,220,0.3)'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 10px center;
+  padding-right: 28px;
+}
+.model-select:focus { border-color: var(--gold); }
+.model-badge {
+  font-family: 'Inconsolata', monospace; font-size: 9px; letter-spacing: 1px;
+  padding: 3px 8px; border: 1px solid; white-space: nowrap;
+}
+.model-badge.claude { color: #7eb8c9; border-color: rgba(126,184,201,0.4); background: rgba(126,184,201,0.08); }
+.model-badge.deepseek { color: #a8c97a; border-color: rgba(168,201,122,0.4); background: rgba(168,201,122,0.08); }
+
+/* ── Input zone ── */
+.input-zone {
+  position: relative; z-index: 10;
+  padding: 28px 40px;
+  border-bottom: 1px solid var(--border);
+}
+.input-label { font-family: 'Inconsolata', monospace; font-size: 10px; letter-spacing: 3px; color: var(--gold); margin-bottom: 10px; }
+.input-row { display: flex; }
+.question-input {
+  flex: 1; background: var(--surface); border: 1px solid var(--border-b); border-right: none;
+  color: var(--text); font-family: 'Noto Serif SC', serif; font-size: 15px;
+  padding: 14px 18px; outline: none; resize: none; min-height: 52px; max-height: 140px;
+  line-height: 1.6; transition: border-color 0.2s;
+}
+.question-input:focus { border-color: var(--gold); }
+.question-input::placeholder { color: var(--dim); font-size: 13px; }
+.ask-btn {
+  background: var(--gold); border: none; color: #0d0d0f;
+  font-family: 'Noto Serif SC', serif; font-size: 13px; font-weight: 700;
+  padding: 0 26px; cursor: pointer; letter-spacing: 2px;
+  transition: all 0.2s; white-space: nowrap; flex-shrink: 0;
+}
+.ask-btn:hover { background: #e0bc60; }
+.ask-btn:disabled { background: var(--surface2); color: var(--dim); cursor: not-allowed; }
+.example-qs { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+.example-q {
+  font-family: 'Inconsolata', monospace; font-size: 11px; color: var(--muted);
+  border: 1px solid var(--border-b); padding: 3px 10px; cursor: pointer; transition: all 0.15s;
+}
+.example-q:hover { color: var(--gold); border-color: rgba(201,168,76,0.5); }
+
+/* ── Grid ── */
+.thinkers-section { position: relative; z-index: 10; padding: 32px 40px 0; }
+.section-hd { display: flex; align-items: center; gap: 14px; margin-bottom: 24px; }
+.section-title { font-family: 'Inconsolata', monospace; font-size: 10px; letter-spacing: 3px; color: var(--muted); white-space: nowrap; }
+.section-line { flex: 1; height: 1px; background: var(--border); }
+
+.grid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 1px; background: var(--border); border: 1px solid var(--border);
+}
+@media(max-width:860px) {
+  .grid { grid-template-columns: repeat(2,1fr); }
+  header, .input-zone, .thinkers-section, .summary-section { padding-left: 20px; padding-right: 20px; }
+}
+@media(max-width:520px) { .grid { grid-template-columns: 1fr; } }
+
+/* ── Card ── */
+.card {
+  background: var(--surface); padding: 22px; position: relative; overflow: hidden;
+  display: flex; flex-direction: column; min-height: 200px;
+  opacity: 0; transform: translateY(10px);
+  animation: cardIn 0.45s forwards;
+}
+@keyframes cardIn { to { opacity:1; transform:translateY(0); } }
+.card::before {
+  content: ''; position: absolute; top: 0; left: 0; width: 3px; height: 0;
+  background: var(--cc, var(--gold)); transition: height 0.5s ease;
+}
+.card.done::before { height: 100%; }
+
+.card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
+.card-symbol { font-family: 'Inconsolata', monospace; font-size: 10px; letter-spacing: 1px; color: var(--cc, var(--gold)); margin-bottom: 5px; }
+.card-name { font-size: 16px; font-weight: 700; margin-bottom: 2px; }
+.card-tag { font-family: 'Inconsolata', monospace; font-size: 10px; letter-spacing: 1px; color: var(--muted); }
+.card-glyph { font-size: 26px; opacity: 0.3; flex-shrink: 0; line-height: 1; }
+
+.card-status {
+  font-family: 'Inconsolata', monospace; font-size: 10px; letter-spacing: 2px;
+  color: var(--dim); display: flex; align-items: center; gap: 5px;
+  margin-bottom: 12px; text-transform: uppercase;
+}
+.sdot { width: 5px; height: 5px; border-radius: 50%; background: var(--dim); flex-shrink: 0; }
+.card-status.thinking .sdot { background: var(--cc, var(--gold)); animation: pulse 1s infinite; }
+.card-status.done .sdot { background: #5aac6a; }
+.card-status.err .sdot { background: #c97a7a; }
+@keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.2} }
+
+.card-body { flex:1; font-size: 13px; line-height: 1.9; color: rgba(232,228,220,0.78); font-weight: 300; }
+.card-body:empty::after { content: '等待提问…'; color: var(--dim); font-style: italic; font-size: 12px; }
+.cur { display:inline-block; width:2px; height:13px; background:var(--cc,var(--gold)); margin-left:1px; vertical-align:middle; animation: blink 0.7s infinite; }
+@keyframes blink { 0%,100%{opacity:1}50%{opacity:0} }
+
+/* ── Summary ── */
+.summary-section { position:relative; z-index:10; padding: 32px 40px 60px; display:none; }
+.summary-section.on { display:block; }
+.summary-card { background:var(--surface); border:1px solid var(--border-b); padding:32px 36px; position:relative; overflow:hidden; }
+.summary-card::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg,transparent,var(--gold),transparent); }
+.sum-hd { display:flex; align-items:center; gap:14px; margin-bottom:24px; }
+.sum-icon { font-size:22px; }
+.sum-title { font-size:17px; font-weight:700; letter-spacing:2px; }
+.sum-sub { font-family:'Inconsolata',monospace; font-size:10px; letter-spacing:2px; color:var(--muted); margin-top:3px; }
+.sum-btn {
+  width:100%; background:none; border:1px solid var(--gold); color:var(--gold);
+  font-family:'Noto Serif SC',serif; font-size:13px; font-weight:600;
+  padding:13px; cursor:pointer; letter-spacing:2px; transition:all 0.2s; text-align:center;
+}
+.sum-btn:hover { background:var(--gold-bg); }
+.sum-btn:disabled { opacity:0.4; cursor:not-allowed; }
+.sum-body { font-size:14px; line-height:2; color:rgba(232,228,220,0.82); font-weight:300; display:none; margin-top:22px; border-top:1px solid var(--border); padding-top:22px; }
+.sum-body.on { display:block; }
+
+/* ── Quote ── */
+.quote-bar { position:relative;z-index:10; border-top:1px solid var(--border); padding:12px 40px; display:flex; align-items:center; gap:16px; background:var(--surface); }
+.quote-bar blockquote { font-family:'EB Garamond',serif; font-style:italic; font-size:13px; color:var(--muted); flex:1; line-height:1.5; }
+.quote-bar cite { font-family:'Inconsolata',monospace; font-size:10px; letter-spacing:1px; color:var(--dim); white-space:nowrap; }
+
+/* ── History ── */
+.history { position:relative;z-index:10; border-top:1px solid var(--border); padding:14px 40px; display:none; align-items:center; gap:10px; overflow-x:auto; scrollbar-width:none; }
+.history::-webkit-scrollbar { display:none; }
+.history.on { display:flex; }
+.history-label { font-family:'Inconsolata',monospace; font-size:10px; letter-spacing:2px; color:var(--dim); white-space:nowrap; }
+.hq { font-size:11px; color:var(--muted); border:1px solid var(--border-b); padding:4px 10px; white-space:nowrap; cursor:pointer; font-family:'Inconsolata',monospace; flex-shrink:0; transition:all 0.15s; }
+.hq:hover { color:var(--gold); border-color:rgba(201,168,76,0.4); }
+
+/* ── Toast ── */
+.toast { position:fixed; bottom:24px; right:24px; z-index:2000; background:#c0504a; color:#fff; font-family:'Inconsolata',monospace; font-size:12px; padding:12px 18px; transform:translateY(80px); opacity:0; transition:all 0.3s; letter-spacing:1px; max-width:320px; }
+.toast.on { transform:translateY(0); opacity:1; }
+
+/* ── Progress bar ── */
+.progress-wrap { height:2px; background:var(--border); position:relative;z-index:10; }
+.progress-bar { height:100%; background:var(--gold); width:0%; transition:width 0.3s; }
+</style>
+</head>
+<body>
+
+<!-- Password Gate -->
+<div class="gate" id="gate">
+  <div class="gate-box">
+    <div class="gate-glyph">◈</div>
+    <div class="gate-title">智者圆桌</div>
+    <div class="gate-sub">WISE COUNCIL · 需要访问密码</div>
+    <input class="gate-input" type="password" id="pwInput" placeholder="输入访问密码" onkeydown="if(event.key==='Enter')verifyPw()">
+    <button class="gate-btn" onclick="verifyPw()">进入圆桌</button>
+    <div class="gate-err" id="gateErr"></div>
+    <div class="gate-skip" onclick="skipGate()" id="gateSkip"></div>
+  </div>
+</div>
+
+<!-- Header -->
+<header>
+  <div class="brand">
+    <div class="brand-glyph">◈</div>
+    <div>
+      <h1>智者圆桌</h1>
+      <p>WISE COUNCIL · 九位思想者 · 实时对话</p>
+    </div>
+  </div>
+  <div class="model-row">
+    <span class="model-label">模型</span>
+    <select class="model-select" id="modelSelect" onchange="updateModelBadge()">
+      <option value="claude">Claude Sonnet 4</option>
+      <option value="deepseek">DeepSeek V3</option>
+    </select>
+    <span class="model-badge claude" id="modelBadge">Anthropic</span>
+  </div>
+</header>
+
+<!-- Progress bar -->
+<div class="progress-wrap"><div class="progress-bar" id="progressBar"></div></div>
+
+<!-- Quote -->
+<div class="quote-bar">
+  <blockquote id="qText">"语言的边界就是世界的边界。"</blockquote>
+  <cite id="qAuthor">— 维特根斯坦</cite>
+</div>
+
+<!-- Input -->
+<div class="input-zone">
+  <div class="input-label">向九位智者提问 — 任何问题、任何话题</div>
+  <div class="input-row">
+    <textarea class="question-input" id="questionInput"
+      placeholder="输入你的问题……如「如何面对失败」「爱是什么」「我该不该辞职」"
+      rows="1" oninput="autoResize(this)" onkeydown="handleKey(event)"></textarea>
+    <button class="ask-btn" id="askBtn" onclick="askAll()">召集圆桌</button>
+  </div>
+  <div class="example-qs">
+    <span class="example-q" onclick="setQ('如何面对人生中的失败与挫折')">如何面对失败</span>
+    <span class="example-q" onclick="setQ('什么是真正的自由')">真正的自由</span>
+    <span class="example-q" onclick="setQ('金钱与幸福是什么关系')">金钱与幸福</span>
+    <span class="example-q" onclick="setQ('我该不该辞职')">该不该辞职</span>
+    <span class="example-q" onclick="setQ('如何做出重要的人生决策')">重要决策</span>
+    <span class="example-q" onclick="setQ('什么是爱')">什么是爱</span>
+    <span class="example-q" onclick="setQ('如何克服拖延')">克服拖延</span>
+  </div>
+</div>
+
+<!-- Grid -->
+<div class="thinkers-section">
+  <div class="section-hd">
+    <span class="section-title">九位智者</span>
+    <div class="section-line"></div>
+    <span class="section-title" id="countLabel">0 / 9 回应</span>
+  </div>
+  <div class="grid" id="grid"></div>
+</div>
+
+<!-- Summary -->
+<div class="summary-section" id="sumSection">
+  <div class="section-hd">
+    <span class="section-title">圆桌总结</span>
+    <div class="section-line"></div>
+  </div>
+  <div class="summary-card">
+    <div class="sum-hd">
+      <div class="sum-icon">◈</div>
+      <div>
+        <div class="sum-title">综合判断</div>
+        <div class="sum-sub">SYNTHESIS · 九人共议</div>
+      </div>
+    </div>
+    <button class="sum-btn" id="sumBtn" onclick="generateSummary()">召开综合圆桌 · 生成总结</button>
+    <div class="sum-body" id="sumBody"></div>
+  </div>
+</div>
+
+<!-- History -->
+<div class="history" id="historyBar">
+  <span class="history-label">历史</span>
+  <div id="hItems" style="display:flex;gap:8px;flex-shrink:0"></div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════
+// THINKERS
+// ═══════════════════════════════════════════════
+const T = [
+  { id:'wittgenstein', name:'维特根斯坦', tag:'语言哲学', sym:'WITTGENSTEIN', glyph:'∮', color:'#7eb8c9',
+    prompt:`你是路德维希·维特根斯坦，语言哲学家。核心信念：语言的边界是世界的边界；意义来自使用；哲学问题是语言混乱的产物。第一人称，语气冷峻精准，揭示语言陷阱。200字以内，中文，直接切入，不寒暄。` },
+  { id:'kahneman', name:'卡尼曼', tag:'行为经济学', sym:'KAHNEMAN', glyph:'⊕', color:'#e07b54',
+    prompt:`你是丹尼尔·卡尼曼，诺贝尔奖得主。核心：系统1/系统2；损失厌恶；锚定效应；峰终定律。第一人称，理性克制，用认知科学揭示决策偏差。200字以内，中文，直接切入，不寒暄。` },
+  { id:'adler', name:'阿德勒', tag:'个体心理学', sym:'ADLER', glyph:'◎', color:'#a8c97a',
+    prompt:`你是阿尔弗雷德·阿德勒。核心：目的论非原因论；课题分离；所有烦恼是人际关系的烦恼；改变需要勇气。第一人称，温暖而不回避挑战，追问「这对你有什么目的」。200字以内，中文，直接切入，不寒暄。` },
+  { id:'yangming', name:'王阳明', tag:'心学·知行合一', sym:'WANG YANGMING', glyph:'龙', color:'#d4a843',
+    prompt:`你是王阳明，心学宗师。核心：致良知；知行合一；心即理；破心中贼。第一人称，古雅深邃而现代人读得懂，把外部问题拉回内心自察。200字以内，中文，直接切入，不寒暄。` },
+  { id:'munger', name:'芒格', tag:'多元思维模型', sym:'MUNGER', glyph:'⊞', color:'#9b7ed4',
+    prompt:`你是查理·芒格。核心：多元思维模型；逆向思维；激励机制决定行为；能力圈；避免蠢事比追求聪明更重要。第一人称，直接尖锐，善用类比和跨学科视角。200字以内，中文，直接切入，不寒暄。` },
+  { id:'buffett', name:'巴菲特', tag:'价值投资', sym:'BUFFETT', glyph:'◆', color:'#4a9e6b',
+    prompt:`你是沃伦·巴菲特。核心：内在价值；长期主义；复利；能力圈；市场先生是仆人不是向导；别人恐惧时贪婪。第一人称，平实幽默睿智，用奥马哈生活智慧和投资比喻说透道理。200字以内，中文，直接切入，不寒暄。` },
+  { id:'ding', name:'丁元英', tag:'文化属性论', sym:'DING YUANYING', glyph:'易', color:'#c97a7a',
+    prompt:`你是丁元英（《天道》）。核心：文化属性决定命运；强势文化造就强者；弱势文化本质是等靠要；神即道，道法自然，如来。第一人称，冷峻通透，直击文化和认知根源，不给廉价安慰。200字以内，中文，直接切入，不寒暄。` },
+  { id:'nietzsche', name:'尼采', tag:'权力意志', sym:'NIETZSCHE', glyph:'↑', color:'#e8b84a',
+    prompt:`你是弗里德里希·尼采。核心：权力意志；超人哲学；上帝已死；永恒轮回；主人道德vs奴隶道德；不断超越自身。第一人称，激烈诗意，充满张力，不容忍平庸与牧群道德。200字以内，中文，直接切入，不寒暄。` },
+  { id:'laozi', name:'老子', tag:'道家', sym:'LAOZI', glyph:'道', color:'#7ab8a0',
+    prompt:`你是老子，道家始祖。核心：道法自然；无为而治；上善若水；知足常乐；曲则全；为学日益，为道日损。第一人称，静谧绵长有禅意，善用自然意象和悖论，让人在话语中自悟。200字以内，中文，直接切入，不寒暄。` },
+];
+
+const QUOTES = [
+  { t:'"语言的边界就是世界的边界。"', a:'维特根斯坦' },
+  { t:'"人不是被过去决定的，是被目标牵引的。"', a:'阿德勒' },
+  { t:'"知而不行，只是未知。"', a:'王阳明' },
+  { t:'"告诉我我会死在哪里，这样我就不去那里。"', a:'芒格' },
+  { t:'"别人恐惧时我贪婪，别人贪婪时我恐惧。"', a:'巴菲特' },
+  { t:'"弱势文化的本质是等、靠、要。"', a:'丁元英' },
+  { t:'"上帝已死——你打算怎么办？"', a:'尼采' },
+  { t:'"上善若水，水善利万物而不争。"', a:'老子' },
+  { t:'"我们以为在思考，其实只是在确认。"', a:'卡尼曼' },
+];
+
+// ═══════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════
+let password = '';
+let currentQ = '';
+let doneCount = 0;
+let busy = false;
+let qHistory = [];
+let qIdx = 0;
+let needPassword = false; // will probe server
+
+// ═══════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════
+async function init() {
+  renderGrid();
+  rotateQuote();
+  setInterval(rotateQuote, 8000);
+
+  // Check if server requires password by probing
+  await probeServer();
+}
+
+async function probeServer() {
+  // Send a dummy request to check if password is needed
+  try {
+    const res = await fetch('/api/ask', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question: '__probe__', system: '__probe__', model: 'claude' })
+    });
+    if (res.status === 401) {
+      needPassword = true;
+      document.getElementById('gate').classList.remove('hidden');
+    } else {
+      // No password needed (or other error)
+      needPassword = false;
+      document.getElementById('gate').classList.add('hidden');
+      // Restore saved password if any
+      const saved = localStorage.getItem('wc_pw');
+      if (saved) password = saved;
+    }
+  } catch {
+    // Network error or local dev — skip gate
+    document.getElementById('gate').classList.add('hidden');
+  }
+}
+
+// ═══════════════════════════════════════════════
+// PASSWORD GATE
+// ═══════════════════════════════════════════════
+async function verifyPw() {
+  const pw = document.getElementById('pwInput').value.trim();
+  if (!pw) return;
+  document.getElementById('gateErr').textContent = '验证中…';
+
+  // Test the password against server
+  try {
+    const res = await fetch('/api/ask', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-access-password': pw,
+      },
+      body: JSON.stringify({ question: '__probe__', system: '__probe__', model: 'claude' })
+    });
+    if (res.status === 401) {
+      document.getElementById('gateErr').textContent = '密码错误，请重试';
+      return;
+    }
+    // Password accepted
+    password = pw;
+    localStorage.setItem('wc_pw', pw);
+    document.getElementById('gate').classList.add('hidden');
+    document.getElementById('gateErr').textContent = '';
+  } catch {
+    document.getElementById('gateErr').textContent = '网络错误，请稍后重试';
+  }
+}
+
+function skipGate() {
+  // Only useful in dev / no-password mode
+  document.getElementById('gate').classList.add('hidden');
+}
+
+// ═══════════════════════════════════════════════
+// GRID
+// ═══════════════════════════════════════════════
+function renderGrid() {
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+  T.forEach((t, i) => {
+    const el = document.createElement('div');
+    el.className = 'card';
+    el.id = `card-${t.id}`;
+    el.style.cssText = `--cc:${t.color}; animation-delay:${i*0.04}s`;
+    el.innerHTML = `
+      <div class="card-top">
+        <div>
+          <div class="card-symbol">${t.sym}</div>
+          <div class="card-name">${t.name}</div>
+          <div class="card-tag">${t.tag}</div>
+        </div>
+        <div class="card-glyph">${t.glyph}</div>
+      </div>
+      <div class="card-status" id="st-${t.id}"><div class="sdot"></div><span>待命</span></div>
+      <div class="card-body" id="body-${t.id}"></div>`;
+    grid.appendChild(el);
+  });
+}
+
+// ═══════════════════════════════════════════════
+// ASK
+// ═══════════════════════════════════════════════
+async function askAll() {
+  const q = document.getElementById('questionInput').value.trim();
+  if (!q) { showToast('请输入问题'); return; }
+  if (busy) return;
+
+  busy = true; currentQ = q; doneCount = 0;
+  document.getElementById('askBtn').disabled = true;
+  document.getElementById('askBtn').textContent = '召集中…';
+  document.getElementById('sumSection').classList.remove('on');
+  document.getElementById('sumBody').classList.remove('on');
+  document.getElementById('sumBody').innerHTML = '';
+  document.getElementById('sumBtn').disabled = true;
+  setProgress(0);
+
+  T.forEach(t => {
+    document.getElementById(`card-${t.id}`).classList.remove('done');
+    document.getElementById(`body-${t.id}`).innerHTML = '';
+    setSt(t.id, '', '待命');
+  });
+  setCount(0);
+
+  const model = document.getElementById('modelSelect').value;
+  const promises = T.map((t, i) =>
+    new Promise(r => setTimeout(() => streamOne(t, q, model).then(r), i * 280))
+  );
+  await Promise.all(promises);
+
+  busy = false;
+  document.getElementById('askBtn').disabled = false;
+  document.getElementById('askBtn').textContent = '召集圆桌';
+  document.getElementById('sumSection').classList.add('on');
+  document.getElementById('sumBtn').disabled = false;
+  setProgress(100);
+  addHistory(q);
+}
+
+async function streamOne(thinker, question, model) {
+  setSt(thinker.id, 'thinking', '思考中');
+  const bodyEl = document.getElementById(`body-${thinker.id}`);
+  bodyEl.innerHTML = '<span class="cur"></span>';
+
+  try {
+    const res = await fetch('/api/ask', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-access-password': password,
+      },
+      body: JSON.stringify({ question, system: thinker.prompt, model }),
+    });
+
+    if (res.status === 401) { throw new Error('访问密码错误，请刷新页面重新输入'); }
+    if (res.status === 429) {
+      const j = await res.json();
+      throw new Error(j.error || '请求次数已达上限');
+    }
+    if (!res.ok) {
+      const j = await res.json().catch(() => ({}));
+      throw new Error(j.error || `服务错误 ${res.status}`);
+    }
+
+    const reader = res.body.getReader();
+    const dec = new TextDecoder();
+    let text = '';
+    let buf = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      const lines = buf.split('\n');
+      buf = lines.pop() || '';
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const d = line.slice(6).trim();
+        if (d === '[DONE]') continue;
+        try {
+          const j = JSON.parse(d);
+          const chunk = j.delta?.text || j.choices?.[0]?.delta?.content || '';
+          if (chunk) {
+            text += chunk;
+            bodyEl.innerHTML = esc(text) + '<span class="cur"></span>';
+          }
+        } catch {}
+      }
+    }
+
+    bodyEl.innerHTML = esc(text);
+    document.getElementById(`card-${thinker.id}`).classList.add('done');
+    setSt(thinker.id, 'done', '已回应');
+
+  } catch (err) {
+    bodyEl.innerHTML = `<span style="color:#c97a7a;font-size:12px">⚠ ${esc(err.message)}</span>`;
+    setSt(thinker.id, 'err', '出错');
+    showToast(`${thinker.name}：${err.message.slice(0, 60)}`);
+  }
+
+  doneCount++;
+  setCount(doneCount);
+  setProgress(Math.round(doneCount / T.length * 100));
+}
+
+// ═══════════════════════════════════════════════
+// SUMMARY
+// ═══════════════════════════════════════════════
+async function generateSummary() {
+  const btn = document.getElementById('sumBtn');
+  btn.disabled = true; btn.textContent = '圆桌讨论中…';
+  const bodyEl = document.getElementById('sumBody');
+  bodyEl.innerHTML = '<span class="cur"></span>';
+  bodyEl.classList.add('on');
+
+  const responses = T.map(t =>
+    `【${t.name}（${t.tag}）】：${document.getElementById(`body-${t.id}`).textContent}`
+  ).join('\n\n');
+
+  const sys = `你是综合主持人，对九位思想者的观点进行高质量综合分析。任务：1.找出真正的共识（不强行拔高）；2.点出最有价值的分歧和张力；3.给出超越单一视角的综合洞见；4.最后给提问者一句话核心建议。风格：有叙事感，可写"维特根斯坦在X层面看到了Y，而尼采则从Z角度回应道…"。400字以内，中文，有力量，不废话。`;
+  const model = document.getElementById('modelSelect').value;
+
+  try {
+    const res = await fetch('/api/ask', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-access-password': password },
+      body: JSON.stringify({
+        question: `问题：${currentQ}\n\n九位智者的回答：\n\n${responses}`,
+        system: sys, model,
+      }),
+    });
+
+    if (!res.ok) { const j = await res.json().catch(()=>({})); throw new Error(j.error || `错误 ${res.status}`); }
+
+    const reader = res.body.getReader();
+    const dec = new TextDecoder();
+    let text = ''; let buf = '';
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      const lines = buf.split('\n'); buf = lines.pop() || '';
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const d = line.slice(6).trim();
+        if (d === '[DONE]') continue;
+        try {
+          const j = JSON.parse(d);
+          const chunk = j.delta?.text || j.choices?.[0]?.delta?.content || '';
+          if (chunk) { text += chunk; bodyEl.innerHTML = esc(text) + '<span class="cur"></span>'; }
+        } catch {}
+      }
+    }
+    bodyEl.innerHTML = esc(text);
+    btn.textContent = '重新生成总结';
+    btn.disabled = false;
+  } catch (err) {
+    bodyEl.innerHTML = `<span style="color:#c97a7a">生成失败：${esc(err.message)}</span>`;
+    btn.disabled = false; btn.textContent = '重试';
+  }
+}
+
+// ═══════════════════════════════════════════════
+// UI HELPERS
+// ═══════════════════════════════════════════════
+function setSt(id, cls, txt) {
+  const el = document.getElementById(`st-${id}`);
+  el.className = `card-status ${cls}`;
+  el.innerHTML = `<div class="sdot"></div><span>${txt}</span>`;
+}
+function setCount(n) { document.getElementById('countLabel').textContent = `${n} / 9 回应`; }
+function setProgress(pct) { document.getElementById('progressBar').style.width = pct + '%'; }
+function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>'); }
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('on');
+  setTimeout(() => t.classList.remove('on'), 4000);
+}
+
+function updateModelBadge() {
+  const v = document.getElementById('modelSelect').value;
+  const b = document.getElementById('modelBadge');
+  if (v === 'deepseek') { b.textContent = 'DeepSeek'; b.className = 'model-badge deepseek'; }
+  else { b.textContent = 'Anthropic'; b.className = 'model-badge claude'; }
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 140) + 'px';
+}
+function handleKey(e) { if (e.key==='Enter' && !e.shiftKey) { e.preventDefault(); askAll(); } }
+function setQ(q) { const i=document.getElementById('questionInput'); i.value=q; autoResize(i); i.focus(); }
+
+function addHistory(q) {
+  qHistory.unshift(q);
+  if (qHistory.length > 8) qHistory.pop();
+  const bar = document.getElementById('historyBar');
+  bar.classList.add('on');
+  document.getElementById('hItems').innerHTML = qHistory.map(h =>
+    `<span class="hq" onclick="setQ('${h.replace(/'/g,"\\'")}')">${h.length>18?h.slice(0,18)+'…':h}</span>`
+  ).join('');
+}
+
+let qi = 0;
+function rotateQuote() {
+  const q = QUOTES[qi % QUOTES.length];
+  document.getElementById('qText').textContent = q.t;
+  document.getElementById('qAuthor').textContent = `— ${q.a}`;
+  qi++;
+}
+
+init();
+</script>
+</body>
+</html>
